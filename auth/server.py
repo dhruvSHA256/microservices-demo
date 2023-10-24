@@ -54,10 +54,10 @@ def validate():
         return {"service": "Auth", "message": "Missing credentials"}, 401
     encoded_jwt = encoded_jwt.split(" ")[1]
     try:
-        decoded = jwt.decode(encoded_jwt, JWT_SECRET, algorithm=["HS256"])
+        decoded = jwt.decode(encoded_jwt, JWT_SECRET, algorithms=["HS256"])
         return decoded, 200
     except Exception as err:
-        return {"service": "Auth", "message": f"Not authorized {err}"}, 403
+        return {"service": "Auth hello", "message": f"Not authorized {err}"}, 403
 
 
 if __name__ == "__main__":

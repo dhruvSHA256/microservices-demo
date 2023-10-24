@@ -27,22 +27,22 @@ def login():
     if not err:
         return token
     else:
-        return None, {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
+        return {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
 
 
 @server.route("/upload", methods=["POST"])
 def upload():
     access_, err = validate.token(request)
     if err:
-        return err
+        return {"service": "Gateway", "message": f"Error f{err}"}, 400
     jwt_obj = json.loads(access_)
     if jwt_obj["admin"]:
         if len(request.files) > 1 or len(request.files) < 1:
-            return "exactly one file required", 400
+            return {"service": "Gateway", "message": "exactly one file required"}, 400
         for _, f in request.files.items():
             err = util.upload(f, fs_videos, channel, access)
             if err:
-                return err
+                return {"service": "Gateway", "message": f"Error f{err}"}, 400
         return {"service": "Gateway", "message": "Success"}, 200
     else:
         return {"service": "Gateway", "message": "Not Authorized"}, 401
@@ -52,12 +52,12 @@ def upload():
 def download():
     access_, err = validate.token(request)
     if err:
-        return err
+        return {"service": "Gateway", "message": f"Error f{err}"}, 400
     jwt_obj = json.loads(access_)
     if jwt_obj["admin"]:
         fid_string = request.args.get("fid")
         if not fid_string:
-            return "Gateway: fid is required", 400
+            return {"service": "Gateway", "message": "fid is required"}, 400
         try:
             out = fs_mp3s.get(ObjectId(fid_string))
             return send_file(out, download_name=f"{fid_string}.mp3")

@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app: rabbitmq # has to match .spec.template.metadata.labels
-  replicas: 3 # by default is 1
+  replicas: 1
   template:
     metadata:
       labels:

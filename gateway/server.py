@@ -20,13 +20,15 @@ fs_mp3s = gridfs.GridFS(mongo_mp3.db)
 connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
 channel = connection.channel()
 
+
 @server.route("/login", methods=["POST"])
 def login():
     token, err = access.login(request)
     if not err:
         return token
     else:
-        return err
+        return None, {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
+
 
 @server.route("/upload", methods=["POST"])
 def upload():
@@ -41,9 +43,10 @@ def upload():
             err = util.upload(f, fs_videos, channel, access)
             if err:
                 return err
-        return "success", 200
+        return {"service": "Gateway", "message": "Success"}, 200
     else:
-        return "not authorized", 401
+        return {"service": "Gateway", "message": "Not Authorized"}, 401
+
 
 @server.route("/download", methods=["GET"])
 def download():
@@ -54,15 +57,16 @@ def download():
     if jwt_obj["admin"]:
         fid_string = request.args.get("fid")
         if not fid_string:
-            return "fid is required", 400
+            return "Gateway: fid is required", 400
         try:
             out = fs_mp3s.get(ObjectId(fid_string))
             return send_file(out, download_name=f"{fid_string}.mp3")
         except Exception as err:
-            return f"internal server error: {err}", 500
+            return {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
 
     else:
-        return "not authorized", 401
+        return {"service": "Gateway", "message": "Not Authorized"}, 401
+
 
 if __name__ == "__main__":
     server.run(host="0.0.0.0", port=8080)

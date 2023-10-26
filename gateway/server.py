@@ -7,12 +7,13 @@ from auth import validate
 from auth_svc import access
 from storage import util
 from bson.objectid import ObjectId
+import sys
 
 server = Flask(__name__)
-server.config["MONGO_URI"] = "mongodb://host.minikube.internal:27017/videos"
+server.config["MONGO_URI"] = "mongodb://mongodb:27017/videos"
 
-mongo_video = PyMongo(server, uri="mongodb://host.minikube.internal:27017/videos")
-mongo_mp3 = PyMongo(server, uri="mongodb://host.minikube.internal:27017/mp3s")
+mongo_video = PyMongo(server, uri="mongodb://mongodb:27017/videos")
+mongo_mp3 = PyMongo(server, uri="mongodb://mongodb:27017/mp3s")
 
 fs_videos = gridfs.GridFS(mongo_video.db)
 fs_mp3s = gridfs.GridFS(mongo_mp3.db)
@@ -33,16 +34,17 @@ def login():
 @server.route("/upload", methods=["POST"])
 def upload():
     access_, err = validate.token(request)
-    if err:
+    if err or not access_:
         return {"service": "Gateway", "message": f"Error f{err}"}, 400
     jwt_obj = json.loads(access_)
+    # print(jwt_obj, file=sys.stderr)
     if jwt_obj["admin"]:
         if len(request.files) > 1 or len(request.files) < 1:
             return {"service": "Gateway", "message": "exactly one file required"}, 400
         for _, f in request.files.items():
-            err = util.upload(f, fs_videos, channel, access)
+            err = util.upload(f, fs_videos, channel, jwt_obj)
             if err:
-                return {"service": "Gateway", "message": f"Error f{err}"}, 400
+                return err, 400
         return {"service": "Gateway", "message": "Success"}, 200
     else:
         return {"service": "Gateway", "message": "Not Authorized"}, 401
@@ -69,4 +71,4 @@ def download():
 
 
 if __name__ == "__main__":
-    server.run(host="0.0.0.0", port=8080)
+    server.run(host="0.0.0.0", port=8080, debug=True)

@@ -3,25 +3,22 @@ import datetime
 import os
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from sqlalchemy import create_engine
+from sqlalchemy_utils import database_exists, create_database
 from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
+from flask_migrate import Migrate
+from config import POSTGRES_USER, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_PORT, JWT_SECRET, SERVICE_NAME
 
-
-POSTGRES_USER = os.environ.get("POSTGRES_USER") or "postgres"
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST") or "localhost"
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD") or "postgres"
-POSTGRES_DB = os.environ.get("POSTGRES_DB") or "auth"
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT") or 5432
-JWT_SECRET = os.environ.get("JWT_SECRET") or "sarcasm"
-
-server = Flask(__name__)
-server.config[
+app = Flask(__name__)
+app.config[
     "SQLALCHEMY_DATABASE_URI"
 ] = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
-db = SQLAlchemy(server)
-migrate = Migrate(server, db)
+
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+migrate.init_app(app)
 
 
 class Role(Enum):
@@ -63,11 +60,11 @@ class User(db.Model):
         return check_password_hash(self.password, password)
 
 
-@server.route("/login", methods=["POST"])
+@app.route("/login", methods=["POST"])
 def login():
     auth = request.authorization
     if not auth:
-        return {"service": "Auth", "message": "Missing credentials"}, 401
+        return {"service": SERVICE_NAME, "message": "Missing credentials"}, 401
     email = auth.username
     password = auth.password
     user = User.query.filter(User.email == email).first()
@@ -75,23 +72,26 @@ def login():
         if user.check_password(password):
             return user.create_jwt(JWT_SECRET, "user"), 200
         else:
-            return {"service": "Auth", "message": "Invalid creds"}, 401
+            return {"service": SERVICE_NAME, "message": "Invalid creds"}, 401
     else:
-        return {"service": "Auth", "message": "Invalid creds"}, 401
+        return {"service": SERVICE_NAME, "message": "Invalid creds"}, 401
 
 
-@server.route("/validate", methods=["POST"])
+@app.route("/validate", methods=["POST"])
 def validate():
     encoded_jwt = request.headers["Authorization"]
     if not encoded_jwt:
-        return {"service": "Auth", "message": "Missing credentials"}, 401
+        return {"service": SERVICE_NAME, "message": "Missing credentials"}, 401
     encoded_jwt = encoded_jwt.split(" ")[1]
     try:
         decoded = jwt.decode(encoded_jwt, JWT_SECRET, algorithms=["HS256"])
         return decoded, 200
     except Exception as err:
-        return {"service": "Auth hello", "message": f"Not authorized {err}"}, 403
+        return {"service": SERVICE_NAME, "message": f"Not authorized {err}"}, 403
 
 
 if __name__ == "__main__":
-    server.run(host="0.0.0.0", port=5000)
+    engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
+    if not database_exists(engine.url):
+        create_database(engine.url)
+    app.run(host="0.0.0.0", port=5000)

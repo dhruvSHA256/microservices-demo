@@ -7,18 +7,21 @@ from auth import validate
 from auth_svc import access
 from storage import util
 from bson.objectid import ObjectId
-import sys
+import os
+
+MONGO_HOST = os.environ.get("MONGO_HOST") or "localhost"
+MONGO_PORT = os.environ.get("MONGO_PORT") or 27017
+MONGO_VIDEODB = os.environ.get("MONGO_VIDEODB") or "video"
+MONGO_AUDIOB = os.environ.get("MONGO_AUDIOB") or "audio"
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST") or "rabbitmq"
 
 server = Flask(__name__)
-server.config["MONGO_URI"] = "mongodb://mongodb:27017/videos"
-
-mongo_video = PyMongo(server, uri="mongodb://mongodb:27017/videos")
-mongo_mp3 = PyMongo(server, uri="mongodb://mongodb:27017/mp3s")
-
+server.config["MONGO_URI"] = f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_VIDEODB}"
+mongo_video = PyMongo(server, uri=f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_VIDEODB}")
+mongo_audio = PyMongo(server, uri=f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_AUDIOB}")
 fs_videos = gridfs.GridFS(mongo_video.db)
-fs_mp3s = gridfs.GridFS(mongo_mp3.db)
-
-connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
+fs_mp3s = gridfs.GridFS(mongo_audio.db)
+connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_HOST))
 channel = connection.channel()
 
 
@@ -33,11 +36,10 @@ def login():
 
 @server.route("/upload", methods=["POST"])
 def upload():
-    access_, err = validate.token(request)
-    if err or not access_:
+    jwt_token, err = validate.token(request)
+    if err or not jwt_token:
         return {"service": "Gateway", "message": f"Error f{err}"}, 400
-    jwt_obj = json.loads(access_)
-    # print(jwt_obj, file=sys.stderr)
+    jwt_obj = json.loads(jwt_token)
     if jwt_obj["admin"]:
         if len(request.files) > 1 or len(request.files) < 1:
             return {"service": "Gateway", "message": "exactly one file required"}, 400
@@ -52,17 +54,17 @@ def upload():
 
 @server.route("/download", methods=["GET"])
 def download():
-    access_, err = validate.token(request)
-    if err:
+    jwt_token, err = validate.token(request)
+    if err or not jwt_token:
         return {"service": "Gateway", "message": f"Error f{err}"}, 400
-    jwt_obj = json.loads(access_)
+    jwt_obj = json.loads(jwt_token)
     if jwt_obj["admin"]:
         fid_string = request.args.get("fid")
         if not fid_string:
             return {"service": "Gateway", "message": "fid is required"}, 400
         try:
-            out = fs_mp3s.get(ObjectId(fid_string))
-            return send_file(out, download_name=f"{fid_string}.mp3")
+            output = fs_mp3s.get(ObjectId(fid_string))
+            return send_file(output, download_name=f"{fid_string}.mp3")
         except Exception as err:
             return {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
 

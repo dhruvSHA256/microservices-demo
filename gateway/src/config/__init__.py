@@ -13,3 +13,13 @@ SERVICE_NAME = os.environ.get("SERVICE_NAME") or "auth"
 MONGO_URI = f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_VIDEODB}"
 MONGO_VIDEO_URI = f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_VIDEODB}"
 MONGO_AUDIO_URI = f"mongodb://{MONGO_HOST}:{MONGO_PORT}/{MONGO_AUDIOB}"
+POSTGRES_USER = os.environ.get("POSTGRES_USER") or "postgres"
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST") or "localhost"
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD") or "postgres"
+POSTGRES_DB = os.environ.get("POSTGRES_DB") or "gateway"
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT") or 5432
+JWT_SECRET = os.environ.get("JWT_SECRET") or "secret"
+SERVICE_NAME = os.environ.get("SERVICE_NAME") or "gateway"
+SQLALCHEMY_DATABASE_URI = (
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+)

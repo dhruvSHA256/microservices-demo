@@ -12,3 +12,7 @@ data:
   RABBITMQ_HOST: "rabbitmq"
   VIDEO_QUEUE: "video"
   SERVICE_NAME: "gateway"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_DB: "gateway"
+  POSTGRES_PORT: "5432"

@@ -5,12 +5,12 @@ RUN apt-get update \
     build-essential
 
 WORKDIR /app
-COPY ./requirements.txt /app
+COPY src /app
 
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+RUN flask db init; exit 0; flask db migrate; exit 0; flask db upgrade; exit 0
 
 EXPOSE 8080
 

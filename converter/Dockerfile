@@ -5,9 +5,9 @@ RUN apt-get update \
   build-essential ffmpeg
 
 WORKDIR /app
-COPY ./requirements.txt /app
+COPY src /app/
+
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir --requirement /app/requirements.txt
-COPY . /app
+RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python3", "app.py"]

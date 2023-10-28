@@ -31,7 +31,6 @@ def convert_to_audio(message, channel):
     f.close()
     os.remove(tf_path)
     message["audio_fid"] = str(fid)
-
     try:
         channel.basic_publish(
             exchange="",
@@ -51,7 +50,7 @@ def callback(ch, method, properties, body):
         ch.basic_nack(delivery_tag=method.delivery_tag)
     else:
         ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(message, file=sys.stderr)
+    return message
 
 
 def main():

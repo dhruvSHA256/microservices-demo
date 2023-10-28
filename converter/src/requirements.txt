@@ -23,3 +23,9 @@ toml==0.10.2
 tqdm==4.62.3
 urllib3==1.26.8
 wrapt==1.13.3
+psycopg2-binary==2.9.9
+PyJWT==2.8.0
+SQLAlchemy==2.0.22
+SQLAlchemy-Utils==0.41.1
+Flask-Migrate==4.0.5
+Flask-SQLAlchemy==3.1.1

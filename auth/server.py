@@ -2,30 +2,65 @@ import jwt
 import datetime
 import os
 from flask import Flask, request
-from flask_mysqldb import MySQL
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from werkzeug.security import generate_password_hash, check_password_hash
+from enum import Enum
+
+
+POSTGRES_USER = os.environ.get("POSTGRES_USER") or "postgres"
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST") or "localhost"
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD") or "postgres"
+POSTGRES_DB = os.environ.get("POSTGRES_DB") or "auth"
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT") or 5432
+JWT_SECRET = os.environ.get("JWT_SECRET") or "sarcasm"
 
 server = Flask(__name__)
-mysql = MySQL(server)
+server.config[
+    "SQLALCHEMY_DATABASE_URI"
+] = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
-server.config["MYSQL_HOST"] = os.environ.get("MYSQL_HOST")
-server.config["MYSQL_PORT"] = int(os.environ.get("MYSQL_PORT", "3306"))
-server.config["MYSQL_USER"] = os.environ.get("MYSQL_USER")
-server.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD")
-server.config["MYSQL_DB"] = os.environ.get("MYSQL_DB")
-JWT_SECRET = os.environ.get("JWT_SECRET")
+db = SQLAlchemy(server)
+migrate = Migrate(server, db)
 
 
-def create_jwt(username, secret, authz):
-    return jwt.encode(
-        {
-            "username": username,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1),
-            "iat": datetime.datetime.utcnow(),
-            "admin": authz,
-        },
-        secret,
-        algorithm="HS256",
-    )
+class Role(Enum):
+    ADMIN = "admin"
+    USER = "user"
+    GUEST = "guest"
+
+
+class User(db.Model):
+    __tablename__ = "user"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String())
+    email = db.Column(db.String())
+    password = db.Column(db.String(), nullable=False)
+    role = db.Column(db.Enum(Role), default=Role.GUEST)
+
+    def __init__(self, name, email, password):
+        self.name = name
+        self.email = email
+        self.password = generate_password_hash(password)
+
+    def __repr__(self):
+        return f"<User {self.email}>"
+
+    def create_jwt(self, secret, role):
+        return jwt.encode(
+            {
+                "email": self.email,
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1),
+                "iat": datetime.datetime.utcnow(),
+                "role": role,
+            },
+            secret,
+            algorithm="HS256",
+        )
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
 
 
 @server.route("/login", methods=["POST"])
@@ -33,16 +68,14 @@ def login():
     auth = request.authorization
     if not auth:
         return {"service": "Auth", "message": "Missing credentials"}, 401
-    cur = mysql.connection.cursor()
-    res = cur.execute("SELECT email, password FROM user WHERE email=%s", (auth.username,))
-    if res > 0:
-        user_row = cur.fetchone()
-        email = user_row[0]
-        password = user_row[1]
-        if auth.username != email or auth.password != password:
-            return {"service": "Auth", "message": "Invalid creds"}, 401
+    email = auth.username
+    password = auth.password
+    user = User.query.filter(User.email == email).first()
+    if user:
+        if user.check_password(password):
+            return user.create_jwt(JWT_SECRET, "user"), 200
         else:
-            return create_jwt(auth.username, JWT_SECRET, True), 200
+            return {"service": "Auth", "message": "Invalid creds"}, 401
     else:
         return {"service": "Auth", "message": "Invalid creds"}, 401
 

@@ -10,3 +10,5 @@ data:
   MONGO_VIDEODB: "video"
   MONGO_AUDIOB: "audio"
   RABBITMQ_HOST: "rabbitmq"
+  VIDEO_QUEUE: "video"
+  SERVICE_NAME: "gateway"

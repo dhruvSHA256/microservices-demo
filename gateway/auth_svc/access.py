@@ -1,9 +1,5 @@
-import os
 import requests
-
-AUTH_SVC_HOST = os.environ.get("AUTH_SVC_HOST") or "auth"
-AUTH_SVC_PORT = os.environ.get("AUTH_SVC_PORT") or "5000"
-AUTH_SVC_URL = f"http://{AUTH_SVC_HOST}:{AUTH_SVC_PORT}"
+from config import AUTH_SVC_URL
 
 
 def login(request):

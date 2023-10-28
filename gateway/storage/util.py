@@ -1,6 +1,6 @@
 import pika
 import json
-import os
+from config import VIDEO_QUEUE
 
 
 def upload(f, fs, channel, jwt_obj):
@@ -12,7 +12,7 @@ def upload(f, fs, channel, jwt_obj):
     try:
         channel.basic_publish(
             exchange="",
-            routing_key=os.environ.get("VIDEO_QUEUE"),
+            routing_key=VIDEO_QUEUE,
             body=json.dumps(message),
             properties=pika.BasicProperties(delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE),
         )

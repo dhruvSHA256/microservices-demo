@@ -1,11 +1,14 @@
 import pika
+import requests
 import sys
 import json
-from config import RABBITMQ_HOST, AUDIO_QUEUE
+from config import RABBITMQ_HOST, AUDIO_QUEUE, GATEWAY_URI
 
 
 def send_mail(message, channel):
     message = json.loads(message)
+    print(f"{message['email']}: {message['video_fid']} -> {message['audio_fid']}", sys.stderr)
+    requests.get(f"{GATEWAY_URI}/update?vid={message['video_fid']}&aid={message['audio_fid']}")
     return None, message["audio_fid"]
 
 

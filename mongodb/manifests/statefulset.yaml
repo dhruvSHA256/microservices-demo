@@ -14,18 +14,18 @@ spec:
         app: mongodb
     spec:
       containers:
-      - name: mongodb
-        image: mongo:4.0.8
-        ports:
-          - containerPort: 27017
-        volumeMounts:
-          - name: mongodb-volume
-            mountPath: "/data/db" 
-        envFrom:
-          - configMapRef:
-              name: mongodb-configmap
-          - secretRef:
-              name: mongodb-secret
+        - name: mongodb
+          image: mongo:4.0.8
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-volume
+              mountPath: "/data/db"
+          envFrom:
+            - configMapRef:
+                name: mongodb-configmap
+            - secretRef:
+                name: mongodb-secret
       volumes:
         - name: mongodb-volume
           persistentVolumeClaim:

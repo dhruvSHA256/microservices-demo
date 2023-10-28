@@ -5,4 +5,4 @@ metadata:
   name: mongodb-configmap
   namespace: default
 data:
-  PLACEHOLDER: "NONE"
+  NAME: "value"

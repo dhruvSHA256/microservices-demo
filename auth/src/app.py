@@ -1,12 +1,12 @@
 import jwt
 import datetime
 from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from sqlalchemy_utils import database_exists, create_database
 from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
-from flask_migrate import Migrate
 from config import JWT_SECRET, SERVICE_NAME, SQLALCHEMY_DATABASE_URI
 
 app = Flask(__name__)
@@ -14,7 +14,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-migrate.init_app(app)
 
 
 class Role(Enum):
@@ -28,11 +27,11 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String())
-    email = db.Column(db.String())
+    email = db.Column(db.String(), unique=True, nullable=False)
     password = db.Column(db.String(), nullable=False)
     role = db.Column(db.Enum(Role), default=Role.GUEST)
 
-    def __init__(self, name, email, password):
+    def __init__(self, email, password, name=""):
         self.name = name
         self.email = email
         self.password = generate_password_hash(password)
@@ -70,7 +69,23 @@ def login():
         else:
             return {"service": SERVICE_NAME, "message": "Invalid creds"}, 401
     else:
-        return {"service": SERVICE_NAME, "message": "Invalid creds"}, 401
+        return "Invalid creds", 401
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    auth = request.authorization
+    if not auth:
+        return {"service": SERVICE_NAME, "message": "Missing credentials"}, 401
+    email = auth.username
+    password = auth.password
+    user = User(email, password)
+    try:
+        db.session.add(user)
+        db.session.commit()
+        return user.email, 200
+    except Exception as err:
+        return {"service": SERVICE_NAME, "message": f"{err}"}, 400
 
 
 @app.route("/validate", methods=["POST"])
@@ -83,13 +98,12 @@ def validate():
         decoded = jwt.decode(encoded_jwt, JWT_SECRET, algorithms=["HS256"])
         return decoded, 200
     except Exception as err:
-        return {"service": SERVICE_NAME, "message": f"Not authorized {err}"}, 403
+        return f"Not authorized {err}", 403
 
 
 if __name__ == "__main__":
     engine = create_engine(SQLALCHEMY_DATABASE_URI)
     if not database_exists(engine.url):
         create_database(engine.url)
-    with app.app_context():
-        db.create_all()
+    User.metadata.create_all(engine)
     app.run(host="0.0.0.0", port=5000)

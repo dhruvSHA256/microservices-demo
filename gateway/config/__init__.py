@@ -3,7 +3,7 @@ import os
 AUTH_SVC_HOST = os.environ.get("AUTH_SVC_HOST") or "auth"
 AUTH_SVC_PORT = os.environ.get("AUTH_SVC_PORT") or "5000"
 AUTH_SVC_URL = f"http://{AUTH_SVC_HOST}:{AUTH_SVC_PORT}"
-MONGO_HOST = os.environ.get("MONGO_HOST") or "localhost"
+MONGO_HOST = os.environ.get("MONGO_HOST") or "mongodb"
 MONGO_PORT = os.environ.get("MONGO_PORT") or 27017
 MONGO_VIDEODB = os.environ.get("MONGO_VIDEODB") or "video"
 MONGO_AUDIOB = os.environ.get("MONGO_AUDIOB") or "audio"

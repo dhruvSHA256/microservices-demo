@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   name: auth-configmap
 data:
-  POSTGRES_HOST: postgres
-  POSTGRES_USER: postgres
-  POSTGRES_DB: auth
+  POSTGRES_HOST: "postgres"
+  POSTGRES_USER: "postgres"
+  POSTGRES_DB: "auth"
   POSTGRES_PORT: "5432"
   SERVICE_NAME: "auth"

@@ -1,14 +1,14 @@
 import pika
 import json
-from config import VIDEO_QUEUE
+from config import VIDEO_QUEUE, SERVICE_NAME
 
 
 def upload(f, fs, channel, jwt_obj):
     try:
         fid = fs.put(f)
     except Exception as err:
-        return {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
-    message = {"video_fid": str(fid), "mp3_fid": None, "username": jwt_obj["username"]}
+        return {"service": SERVICE_NAME, "message": f"Internal server error: {err}"}, 500
+    message = {"video_fid": str(fid), "audio_fid": None, "email": jwt_obj["email"]}
     try:
         channel.basic_publish(
             exchange="",
@@ -18,4 +18,4 @@ def upload(f, fs, channel, jwt_obj):
         )
     except Exception as err:
         fs.delete(fid)
-        return {"service": "Gateway", "message": f"Internal server error: {err}"}, 500
+        return {"service": SERVICE_NAME, "message": f"Internal server error: {err}"}, 500

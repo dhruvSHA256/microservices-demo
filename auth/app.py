@@ -1,6 +1,5 @@
 import jwt
 import datetime
-import os
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
@@ -8,13 +7,10 @@ from sqlalchemy_utils import database_exists, create_database
 from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
 from flask_migrate import Migrate
-from config import POSTGRES_USER, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_PORT, JWT_SECRET, SERVICE_NAME
+from config import JWT_SECRET, SERVICE_NAME, SQLALCHEMY_DATABASE_URI
 
 app = Flask(__name__)
-app.config[
-    "SQLALCHEMY_DATABASE_URI"
-] = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-
+app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -28,7 +24,7 @@ class Role(Enum):
 
 
 class User(db.Model):
-    __tablename__ = "user"
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String())
@@ -91,7 +87,9 @@ def validate():
 
 
 if __name__ == "__main__":
-    engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
+    engine = create_engine(SQLALCHEMY_DATABASE_URI)
     if not database_exists(engine.url):
         create_database(engine.url)
+    with app.app_context():
+        db.create_all()
     app.run(host="0.0.0.0", port=5000)

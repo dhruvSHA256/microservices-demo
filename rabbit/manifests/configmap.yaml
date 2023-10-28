@@ -5,4 +5,4 @@ metadata:
   name: rabbitmq-configmap
   namespace: default
 data:
-  PLACEHOLDER: "NONE"
+  NAME: "value"

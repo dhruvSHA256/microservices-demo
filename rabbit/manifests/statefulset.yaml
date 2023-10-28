@@ -6,12 +6,12 @@ spec:
   serviceName: "not-applicable"
   selector:
     matchLabels:
-      app: rabbitmq # has to match .spec.template.metadata.labels
+      app: rabbitmq
   replicas: 1
   template:
     metadata:
       labels:
-        app: rabbitmq # has to match .spec.selector.matchLabels
+        app: rabbitmq
     spec:
       terminationGracePeriodSeconds: 10
       containers:
